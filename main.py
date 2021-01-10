@@ -471,12 +471,12 @@ class PageRumor():
         self.right = PhotoImage(file=img)
         # self.wrong = PhotoImage(file="pics/rumor.png")
 
-        self.img = self.logf.create_image(self.canvasWidth / 2, 500, image=self.right)
-        self.logf.pack()
+        self.img = self.UI.create_image(self.canvasWidth / 2, 500, image=self.right)
+        self.UI.pack()
 
-        self.logf.delete(self.a1_window)
-        self.logf.itemconfigure(self.img, state=tk.NORMAL)
-        Label(self.logf, text=result, fg="white", bg='slateblue', font=('arial 12 bold '), pady=5, padx=5) \
+        self.UI.delete(self.a1_window)
+        self.UI.itemconfigure(self.img, state=tk.NORMAL)
+        Label(self.UI, text=result, fg="white", bg='slateblue', font=('arial 12 bold '), pady=5, padx=5) \
             .place(x=self.canvasWidth / 2.2, y=540)
  # this is the function which will get file
     def openFile(self,event):
