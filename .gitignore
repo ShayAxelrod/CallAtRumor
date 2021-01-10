@@ -1,5 +1,6 @@
 modelCallRumor.h5
-data/*.png
+data/graphAccuracy.png
+data/graphLoss.png
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
