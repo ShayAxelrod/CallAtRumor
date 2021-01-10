@@ -419,77 +419,58 @@ class PageRumor():
         self.dataset.bind("<ButtonPress-1>", self.openFile)
 
 # GO BUTTON INITIALIZATION HERE
-
-        self.a1 = Button(self.UI, bg='#6A53E1', border=0, text='action')
-        self.okb2 = PhotoImage(file="pics\go.png")
+        self.okb2 = PhotoImage(file="pics\go1.png")
         self.tm2 = self.okb2.subsample(1, 1)
-        self.a1.config(image=self.tm2)
-
-        #self.okb2 = PhotoImage(file="pics\go1.png")
-        #self.tm2 = self.okb2.subsample(1, 1)
-        #self.a1 = Button(self.UI, bg='#6A53E1', border=0, text='action', image=self.tm2)
+        self.a1 = Button(self.UI, bg='#6A53E1', border=0, text='action', image=self.tm2)
 
         # Event Handler
         self.a1.bind("<ButtonPress-1>", self.go_now)
-        self.a1_window=self.UI.create_window(self.canvasWidth/2, 500, window=self.a1)
-# Romur or not Romur Images initialize
-#             self.right = PhotoImage(file="pics/not_rumor.png")
-#             self.wrong = PhotoImage(file="pics/rumor.png")
-#
-#
-#             self.img=self.logf.create_image(self.canvasWidth/2, 500, image=self.right)
+        goButtonPlacement_Y = self.canvasHeight*0.6
+        self.a1_window = self.UI.create_window(self.canvasWidth/2, goButtonPlacement_Y, window=self.a1)
         self.UI.pack()
-        # self.logf.itemconfigure(self.img,state=tk.HIDDEN)
-        #self.a1.place(x=570, y=480)
 
-        # Button Menu
-        self.buttonMenu = Button(self.UI, text="MENU>>", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0, command=self.go_back)\
-            .place(x=self.canvasWidth-150, y=self.canvasHeight * .35)
+        # Go Back To 'Menu' Button
+        self.buttonMenu = Button(self.UI, text="MENU >>", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0, command=self.go_back)
+        self.buttonMenu.place(x=self.canvasWidth-150, y=self.canvasHeight * .35)
 
         # Alpha
         drawAlphaText(self)
 
         self.UI.pack()
 
-#Go back to main menu function
+    # Go back to the menu page
     def go_back(self):
         reset_state(0)
-# This is the function called when Go is clicked
-    def go_now(self,event):
 
-        #call predict function
+    # GoButton eventHandler
+    def go_now(self, event):
+        # Call predict function
         predictionResult, predictionIndex, predictionImage = predictTextFromFile(filename_predict)
-        # show results by calling function
+        # Display the results
         self.show_Results(predictionImage, predictionResult)
 
+    def show_Results(self, predictionAddress, predictionResult):
+        #print(img)
+        print("Showing Results")
+        self.right = PhotoImage(file=predictionAddress)
 
-
-    def show_Results(self,img,result):
-        print(img)
-        print("working")
-        fg = 'white'
-        self.right = PhotoImage(file=img)
-        # self.wrong = PhotoImage(file="pics/rumor.png")
-
-        self.img = self.UI.create_image(self.canvasWidth / 2, 500, image=self.right)
+        resultCoordinate_Y = self.canvasHeight * 0.46
+        self.img = self.UI.create_image(self.canvasWidth / 2, resultCoordinate_Y, image=self.right)
         self.UI.pack()
 
-        self.UI.delete(self.a1_window)
+        self.UI.delete(self.a1_window)  # Remove Go Button
         self.UI.itemconfigure(self.img, state=tk.NORMAL)
-        Label(self.UI, text=result, fg="white", bg='slateblue', font=('arial 12 bold '), pady=5, padx=5) \
-            .place(x=self.canvasWidth / 2.2, y=540)
- # this is the function which will get file
-    def openFile(self,event):
+        Label(self.UI, text=predictionResult, fg="white", bg='#6A53E1', font=('Montserrat_Medium 11'), pady=5, padx=5) \
+            .place(x=(self.canvasWidth / 2.2) + 20, y=resultCoordinate_Y + 40)
+
+    # Open File Dialog and return the address to the selected file
+    def openFile(self, event):
             from tkinter.filedialog import askopenfilename
             global filename_predict
-            print("file path here")
-            # store ffile path in variable and use
             filename_predict = askopenfilename()
             print(filename_predict)
 
-
-
-...
+... #SHAY !!!!
 #!!!!!!!!!!!!!!! This is class to make circular progress bar !!!!!!!!!!!
 # we Get an object as input and all these values defined from Train Page Below
 class CircularProgressbar(object):
