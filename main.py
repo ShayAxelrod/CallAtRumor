@@ -490,9 +490,6 @@ class PageRumor():
         print(filename_predict)
 
 
-...  # SHAY !!!!
-
-
 # !!!!!!!!!!!!!!! This is class to make circular progress bar !!!!!!!!!!!
 # we Get an object as input and all these values defined from Train Page Below
 class CircularProgressbar(object):
@@ -511,34 +508,36 @@ class CircularProgressbar(object):
         self.start_ang, self.full_extent = start_ang, full_extent
         # draw static bar outline
         w2 = width / 2
-        self.canvas.create_oval(self.x0 - w2, self.y0 - w2,
-                                self.x1 + w2, self.y1 + w2, fill="darkslateblue", outline='slateblue')
+        self.canvas.create_oval(self.x0-w2, self.y0-w2,
+                                                self.x1+w2, self.y1+w2,fill="darkslateblue",outline='slateblue')
 
-        self.canvas.create_oval(self.x0 + w2, self.y0 + w2,
-                                self.x1 - w2, self.y1 - w2, fill="slateBlue3", outline='slateblue')
+        self.canvas.create_oval(self.x0+w2, self.y0+w2,
+                                                self.x1-w2, self.y1-w2,fill="slateBlue3",outline='slateblue')
 
         half_width = self.sc_width / 2
         #        print(self.half_width)
         new_width = self.x0  # change_here_if_need
 
-        self.canvas.create_text(self.x0 + 80, self.y0 + 300, text='100',
-                                font=self.custom_font, fill="darkgray")
-        self.canvas.create_text(new_width + 40, self.y0 + 190, text='90',
-                                font=self.custom_font, fill="darkgray")
-        self.canvas.create_text(new_width + 80, self.y0 + 90, text='75',
-                                font=self.custom_font, fill="darkgray")
+        self.canvas.create_text(self.x0+x0/7.54, self.y0+y0/0.735, text='100',
+                                                font=self.custom_font,fill="darkgray")
+        self.canvas.create_text(new_width+x0/15.1, self.y0+y0/1.16, text='90',
+                                font=self.custom_font,fill="darkgray")
+        self.canvas.create_text(new_width+x0/7.54, self.y0+y0/2.45, text='75',
+                                                font=self.custom_font,fill="darkgray")
 
-        self.canvas.create_text(new_width + 190, self.y0 + 35, text='50',
-                                font=self.custom_font, fill="darkgray")
-        self.canvas.create_text(new_width + 300, self.y0 + 90, text='30',
-                                font=self.custom_font, fill="darkgray")
-        self.canvas.create_text(new_width + 340, self.y0 + 190, text='20',
-                                font=self.custom_font, fill="darkgray")
-        self.canvas.create_text(new_width + 300, self.y0 + 300, text='10',
-                                font=self.custom_font, fill="darkgray")
+        self.canvas.create_text(new_width+x0/3.177, self.y0+35, text='50',
+                                                font=self.custom_font,fill="darkgray")
+        self.canvas.create_text(new_width+x0/2.012, self.y0+y0/2.45, text='30',
+                                                 font=self.custom_font,fill="darkgray")
+        self.canvas.create_text(new_width+x0/1.77, self.y0+y0/1.16, text='20',
+                                                 font=self.custom_font,fill="darkgray")
+        self.canvas.create_text(new_width+x0/2.012, self.y0+y0/0.735, text='10',
+                                                 font=self.custom_font,fill="darkgray")
+       
 
-        self.result = self.canvas.create_text(new_width + 190, self.y0 + 350, text='0',
-                                              font=self.custom_font, fill="darkgray")
+        self.result=self.canvas.create_text(new_width+x0/3.177, self.y0+y0/0.63, text='0',
+                                font=self.custom_font,fill="darkgray")
+        print(x0,y0,x1,y1)
         self.running = False
 
     # Starting the progress bar
@@ -683,12 +682,18 @@ class Train_Page:
         self.a71.config(image=self.tm71)
         self.a71_window = self.canvas.create_window(width, 160, window=self.a71)
 
-        width = self.canvasWidth / 2 - 200
+
+
+        # width=self.canvas_width/ 2.65
+        from PIL import ImageTk , Image
+        width = self.canvasWidth
+        height = self.canvasHeight
         self.a1 = Button(self.canvas, bg='slateBlue3', border=0, command=self.start)
-        self.okb1 = PhotoImage(file="pics/begin2.PNG")
-        self.tm1 = self.okb1.subsample(1, 1)
-        self.a1.config(image=self.tm1)
-        self.a1.place(x=width + 105, y=350)
+        self.img = Image.open("pics/begin2.PNG")
+        self.img = self.img.resize((int(width*0.1075),int(height*0.1566)))
+        self.okb1 = ImageTk.PhotoImage(self.img)
+        self.a1.config(image=self.okb1)
+        self.a1.place(x=0.4626*width ,y=height*.4055)
 
         width = self.canvasWidth / 2
         self.a2 = Button(self.canvas, bg='slateBlue3', border=0)
@@ -715,10 +720,27 @@ class Train_Page:
 
         self.canvas.pack()
         # this will pas object to circularprogressbar class and will move there
-        self.progressbar = CircularProgressbar(self.canvasWidth, self.canvas, self.canvasWidth / 2.1 - 200, 200, 1000,
-                                               650, 30)  # change_here_if_need
+        # self.progressbar = CircularProgressbar(self.canvas_width,self.canvas,self.canvas_width/2.1-200, 200, 1000, 650, 30) #change_here_if_need
+        # screen_width = root.winfo_screenwidth()
+        # screen_height = root.winfo_screenheight()
+        # print(screen_width)
+        # print(screen_height)
+        # pixel_width = (12.18*screen_width) / 100
+        # pixel_width2 = (15 * screen_width) / 100
+        # pixel_height = (23.33 * screen_height) / 100
+        # pixel_height2 = (27.5 * screen_height) / 100
+        # print(pixel_height)
 
-    # When Begin Training is clicked
+
+        # self.progressbar = CircularProgressbar(self.canvas_width, self.canvas, self.canvas_width / 2.65, self.canvas_height / 4.08,
+        #                                    self.canvas_width /1.54, self.canvas_height / 1.35,self.canvas_width/53.33 )
+
+        self.progressbar = CircularProgressbar(self.canvasWidth, self.canvas, self.canvasWidth *0.3768,
+                                               self.canvasHeight *0.2450,
+                                               self.canvasWidth * 0.6487, self.canvasHeight *0.74,
+                                               self.canvasWidth / 53.33)
+# When Begin Training is clicked
+
     def start(self):
         # making buttons enabled
         self.canvas.delete(self.a7_window)
