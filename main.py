@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 from bs4 import BeautifulSoup
-import re
 import string
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -16,7 +15,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import matplotlib
 
-matplotlib.use('Agg')  # Render *.PNG filetyped for high quality images using the Anti-Grain Geometry engine.
+matplotlib.use('Agg')  # Render *.PNG filetypes for high quality images using the Anti-Grain Geometry engine.
 
 datasetDefaultAddress = "data/train.csv"
 datasetAddress = datasetDefaultAddress
@@ -24,148 +23,135 @@ datasetAddress = datasetDefaultAddress
 modelDefaultAddress = "modelCallRumor.h5"
 modelAddress = modelDefaultAddress
 
+
+# MAIN FUNCTION FOR TRAINING
+def main_train():
+    dataset = loadDataSet()
+    x_train, x_test, y_train, y_test = makeBatches(dataset)
+    history, totalRunTime, startTime = trainModel(x_train, x_test, y_train, y_test)
+    no_of_epochs, acc, los = unpackHistoryAndBuildGraphs(history)
+    return totalRunTime, startTime, no_of_epochs, acc, los
+
+
 # Load the training data file
 def loadDataSet():
-    import pandas as pd
     data = pd.read_csv(datasetAddress)  # Load the training data
     data = data.dropna()  # Drop null values
     data.reset_index(drop=True, inplace=True)  # Create new indexes for rows (drop=True) on current data (inplace=True)
     return data
 
 
-# Cleans a text
-def cleanText(text):  # This function clean text
-    text = BeautifulSoup(text, "lxml").text  # Use as 'lxml' file
-    text = text.replace('\n', '')  # Removes '\n'
-    text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuations
-    text = re.sub(r'\|\|\|', r' ', text)
-    text = re.sub(r'http\S+', r'<URL>', text)  # Removes URLs
-    text = text.lower()
-    text = text.replace('x', '')  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MAYBE REMOVE ME COMPLETELY!
-    return text
-
-
-# Applies TF-IDF on Batches
-k = 100  # k most frequent words
-
-
-def tfidt(batch):
-    # k = 100  # k most frequent words
-    countVectorizer = CountVectorizer(max_features=k)  # Construct a CountVectorizer with k features
-    tfIdfTransformer = TfidfTransformer(use_idf=True)  # Construct a Tf-Idf Transformer
-
-    wordCount = countVectorizer.fit_transform(batch)  # Count instances of the most popular k words
-    newTfIdf = tfIdfTransformer.fit_transform(wordCount)  # Apply tf-idf on those k words
-
-    trainWords = newTfIdf.toarray()  # Builds an array with the k most popular words ordered by TF-IDF
-    return trainWords
-
-
-# Applies attention
-def applyAttention(wordVectorRowsInSentence):
-    N_f = wordVectorRowsInSentence.shape[-1]  # N_f = k
-    uiVectorRowsInSentence = tf.keras.layers.Dense(units=100, activation='tanh')(
-        wordVectorRowsInSentence)  # [*, N_s, N_a] # Dense = Fully Connected
-    vVectorColumnMatrix = tf.keras.layers.Dense(units=1, activation='tanh')(uiVectorRowsInSentence)  # [*, N_s, 1]
-    vVector = tf.keras.layers.Flatten()(vVectorColumnMatrix)  # [*, N_s]
-    attentionWeightsVector = tf.keras.layers.Activation('softmax', name='attention_vector_layer')(vVector)  # [*,N_s]
-    attentionWeightsMatrix = tf.keras.layers.RepeatVector(N_f)(attentionWeightsVector)  # [*,N_f, N_s]
-    attentionWeightRowsInSentence = tf.keras.layers.Permute([2, 1])(attentionWeightsMatrix)  # [*,N_s, N_f]
-    attentionWeightedSequenceVectors = tf.keras.layers.Multiply()(
-        [wordVectorRowsInSentence, attentionWeightRowsInSentence])  # [*,N_s, N_f]
-    attentionWeightedSentenceVector = tf.keras.layers.Lambda(lambda x: tf.keras.backend.sum(x, axis=1),
-                                                             output_shape=lambda s: (s[0], s[2]))(
-        attentionWeightedSequenceVectors)  # [*,N_f]
-    return attentionWeightedSentenceVector  # output: [*, N_s, N_f]
-
-
-def makeBatches(data):
-    data_title = data['title'].to_numpy()  # Use the 'title' columns
+def makeBatches(dataset):
+    data_title = dataset['title'].to_numpy()  # Use the 'title' columns
     data_title = [cleanText(i) for i in data_title]  # Clean every title
     data_title = np.array(data_title)  # Turns dataSet into an array. Easier to work with arrays
     data_title = data_title[:18000]
     data_title = data_title.reshape(18, 1000)  # make 18 batch
-    ###### SHAY Make this look less noob-like??
+
     # Apply tf-idf on every batch
-    X_train_tfidf_1 = tfidt(data_title[0])
-    X_train_tfidf_2 = tfidt(data_title[1])
-    X_train_tfidf_3 = tfidt(data_title[2])
-    X_train_tfidf_4 = tfidt(data_title[3])
-    X_train_tfidf_5 = tfidt(data_title[4])
-    X_train_tfidf_6 = tfidt(data_title[5])
-    X_train_tfidf_7 = tfidt(data_title[6])
-    X_train_tfidf_8 = tfidt(data_title[7])
-    X_train_tfidf_9 = tfidt(data_title[8])
-    X_train_tfidf_10 = tfidt(data_title[9])
-    X_train_tfidf_11 = tfidt(data_title[10])
-    X_train_tfidf_12 = tfidt(data_title[11])
-    X_train_tfidf_13 = tfidt(data_title[12])
-    X_train_tfidf_14 = tfidt(data_title[13])
-    X_train_tfidf_15 = tfidt(data_title[14])
-    X_train_tfidf_16 = tfidt(data_title[15])
-    X_train_tfidf_17 = tfidt(data_title[16])
-    X_train_tfidf_18 = tfidt(data_title[17])
+    tfIdfWordBatch_1 = tfidt(data_title[0])
+    tfIdfWordBatch_2 = tfidt(data_title[1])
+    tfIdfWordBatch_3 = tfidt(data_title[2])
+    tfIdfWordBatch_4 = tfidt(data_title[3])
+    tfIdfWordBatch_5 = tfidt(data_title[4])
+    tfIdfWordBatch_6 = tfidt(data_title[5])
+    tfIdfWordBatch_7 = tfidt(data_title[6])
+    tfIdfWordBatch_8 = tfidt(data_title[7])
+    tfIdfWordBatch_9 = tfidt(data_title[8])
+    tfIdfWordBatch_10 = tfidt(data_title[9])
+    tfIdfWordBatch_11 = tfidt(data_title[10])
+    tfIdfWordBatch_12 = tfidt(data_title[11])
+    tfIdfWordBatch_13 = tfidt(data_title[12])
+    tfIdfWordBatch_14 = tfidt(data_title[13])
+    tfIdfWordBatch_15 = tfidt(data_title[14])
+    tfIdfWordBatch_16 = tfidt(data_title[15])
+    tfIdfWordBatch_17 = tfidt(data_title[16])
+    tfIdfWordBatch_18 = tfidt(data_title[17])
 
     # Apply Attention on every IF-IDF matrix
-    X_train_tfidf_1 = np.array(applyAttention(X_train_tfidf_1))
-    X_train_tfidf_2 = np.array(applyAttention(X_train_tfidf_2))
-    X_train_tfidf_3 = np.array(applyAttention(X_train_tfidf_3))
-    X_train_tfidf_4 = np.array(applyAttention(X_train_tfidf_4))
-    X_train_tfidf_5 = np.array(applyAttention(X_train_tfidf_5))
-    X_train_tfidf_6 = np.array(applyAttention(X_train_tfidf_6))
-    X_train_tfidf_7 = np.array(applyAttention(X_train_tfidf_7))
-    X_train_tfidf_8 = np.array(applyAttention(X_train_tfidf_8))
-    X_train_tfidf_9 = np.array(applyAttention(X_train_tfidf_9))
-    X_train_tfidf_10 = np.array(applyAttention(X_train_tfidf_10))
-    X_train_tfidf_11 = np.array(applyAttention(X_train_tfidf_11))
-    X_train_tfidf_12 = np.array(applyAttention(X_train_tfidf_12))
-    X_train_tfidf_13 = np.array(applyAttention(X_train_tfidf_13))
-    X_train_tfidf_14 = np.array(applyAttention(X_train_tfidf_14))
-    X_train_tfidf_15 = np.array(applyAttention(X_train_tfidf_15))
-    X_train_tfidf_16 = np.array(applyAttention(X_train_tfidf_16))
-    X_train_tfidf_17 = np.array(applyAttention(X_train_tfidf_17))
-    X_train_tfidf_18 = np.array(applyAttention(X_train_tfidf_18))
+    trainBatch_1 = np.array(applyAttention(tfIdfWordBatch_1))
+    trainBatch_2 = np.array(applyAttention(tfIdfWordBatch_2))
+    trainBatch_3 = np.array(applyAttention(tfIdfWordBatch_3))
+    trainBatch_4 = np.array(applyAttention(tfIdfWordBatch_4))
+    trainBatch_5 = np.array(applyAttention(tfIdfWordBatch_5))
+    trainBatch_6 = np.array(applyAttention(tfIdfWordBatch_6))
+    trainBatch_7 = np.array(applyAttention(tfIdfWordBatch_7))
+    trainBatch_8 = np.array(applyAttention(tfIdfWordBatch_8))
+    trainBatch_9 = np.array(applyAttention(tfIdfWordBatch_9))
+    trainBatch_10 = np.array(applyAttention(tfIdfWordBatch_10))
+    trainBatch_11 = np.array(applyAttention(tfIdfWordBatch_11))
+    trainBatch_12 = np.array(applyAttention(tfIdfWordBatch_12))
+    trainBatch_13 = np.array(applyAttention(tfIdfWordBatch_13))
+    trainBatch_14 = np.array(applyAttention(tfIdfWordBatch_14))
+    trainBatch_15 = np.array(applyAttention(tfIdfWordBatch_15))
+    trainBatch_16 = np.array(applyAttention(tfIdfWordBatch_16))
+    trainBatch_17 = np.array(applyAttention(tfIdfWordBatch_17))
+    trainBatch_18 = np.array(applyAttention(tfIdfWordBatch_18))
 
     # Split Data:
     # Training: 15 Batches (83%)
     # Testing:  03 Batches (17%)
-    x_train_2d = np.concatenate((X_train_tfidf_1, X_train_tfidf_2, X_train_tfidf_3, X_train_tfidf_4, X_train_tfidf_5,
-                                 X_train_tfidf_6, X_train_tfidf_7, X_train_tfidf_8, X_train_tfidf_9, X_train_tfidf_10,
-                                 X_train_tfidf_11, X_train_tfidf_12, X_train_tfidf_13, X_train_tfidf_14,
-                                 X_train_tfidf_15), axis=0)
-    x_test_2d = np.concatenate((X_train_tfidf_16, X_train_tfidf_17, X_train_tfidf_18), axis=0)
+    x_train_2d = np.concatenate((trainBatch_1, trainBatch_2, trainBatch_3, trainBatch_4, trainBatch_5,
+                                 trainBatch_6, trainBatch_7, trainBatch_8, trainBatch_9, trainBatch_10,
+                                 trainBatch_11, trainBatch_12, trainBatch_13, trainBatch_14, trainBatch_15), axis=0)
+
+    x_test_2d = np.concatenate((trainBatch_16, trainBatch_17, trainBatch_18), axis=0)
 
     # Converting the 2d arrays to 3d arrays. LSTM needs 3d arrays as input
     x_train = x_train_2d[:, None]
     x_test = x_test_2d[:, None]
 
     # data_label = labels of the dataSet. (1 = Rumor, 0 = NoRumor)
-    data_label = data['label'].to_numpy()
+    data_label = dataset['label'].to_numpy()
     data_label = data_label[:18000]
 
     y_train = data_label[:15000]
-    y_test = data_label[15000:]  ############# SHAY Limit to: 15000:18000 ??
+    y_test = data_label[15000:]
 
     return x_train, x_test, y_train, y_test
 
 
-# Build the RNN powered by LSTM model
-def rnnWithLSTM():
-    data_dim = k
-    model = Sequential()
-    model.add(LSTM(1024, input_shape=(None, data_dim), return_sequences=True))  # None = Dynamic Input Shape
-    model.add(Dropout(0.3))  # Visible distances between training/validation. See output graphs.
-    model.add(LSTM(512, return_sequences=True))
-    model.add(Dropout(0.3))
-    model.add(LSTM(64))
-    model.add(Dropout(0.3))
-    model.add(Dense(2, activation='sigmoid'))  # Rumor/NonRumor
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return model
+# Cleans a text
+def cleanText(text):  # This function clean text
+    text = BeautifulSoup(text, "lxml").text  # Use as 'lxml' file
+    text = text.lower()
+    text = text.replace('\n', '')  # Removes '\n'
+    text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuations
+    text = re.sub(r'\|\|\|', r' ', text)
+    text = re.sub(r'http\S+', r'<url>', text)  # Removes URLs
+    text = text.replace('x', '')  # SOME ROWS CONTAIN A LOT OF 'x', SO REMOVING THEM ALL WORKS BEST
+    return text
+
+
+# Applies TF-IDF on Batches
+k = 100  # k most frequent words
+def tfidt(batch):
+    countVectorizer = CountVectorizer(max_features=k)  # Construct a CountVectorizer with k features
+    tfIdfTransformer = TfidfTransformer(use_idf=True)  # Construct a Tf-Idf Transformer
+
+    wordCount = countVectorizer.fit_transform(batch)  # Count instances of the most popular k words
+    newTfIdf = tfIdfTransformer.fit_transform(wordCount)  # Apply tf-idf on those k words
+
+    tfIdfWordBatch = newTfIdf.toarray()  # Builds an array with the k most popular words ordered by TF-IDF
+    return tfIdfWordBatch
+
+
+# Applies attention
+def applyAttention(tfIdfWordBatch):
+    N_f = tfIdfWordBatch.shape[-1]  # N_f = k
+    attentionInput = tf.keras.layers.Dense(units=100, activation='tanh')(tfIdfWordBatch)  # [*, N_s, N_a] # Dense = Fully Connected
+    attentionOutputMatrix = tf.keras.layers.Dense(units=1, activation='tanh')(attentionInput)  # [*, N_s, 1]
+    vVector = tf.keras.layers.Flatten()(attentionOutputMatrix)  # [*, N_s]
+    attentionWeightsVector = tf.keras.layers.Activation('softmax', name='attention_vector_layer')(vVector)  # [*,N_s]
+    attentionWeightsMatrix = tf.keras.layers.RepeatVector(N_f)(attentionWeightsVector)  # [*,N_f, N_s]
+    attentionWeightRowsInSentence = tf.keras.layers.Permute([2, 1])(attentionWeightsMatrix)  # [*,N_s, N_f]
+    attentionWeightedSequenceVectors = tf.keras.layers.Multiply()([tfIdfWordBatch, attentionWeightRowsInSentence])  # [*,N_s, N_f]
+    attentionWeightedSentenceVector = tf.keras.layers.Lambda(lambda x: tf.keras.backend.sum(x, axis=1), output_shape=lambda s: (s[0], s[2]))(attentionWeightedSequenceVectors)  # [*,N_f]
+    return attentionWeightedSentenceVector  # output: [*, N_s, N_f]
 
 
 def trainModel(x_train, x_test, y_train, y_test):
-    # Halt the model if it does not improve for patience=5 epochs valued by 'val_loss'
+    # Stop the model if it does not improve for patience=5 epochs valued by 'val_loss'
     early_stop = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
 
     # Save the best model valued by 'val_accuracy'
@@ -184,10 +170,23 @@ def trainModel(x_train, x_test, y_train, y_test):
     return history, totalRunTime, startTime
 
 
+# Build the RNN powered by LSTM model
+def rnnWithLSTM():
+    data_dim = k
+    model = Sequential()
+    model.add(LSTM(1024, input_shape=(None, data_dim), return_sequences=True))  # None = Dynamic Input Shape
+    model.add(Dropout(0.3))  # Visible distances between training/validation. See output graphs. # Doing this to avoid overfitting
+    model.add(LSTM(512, return_sequences=True))
+    model.add(Dropout(0.3))
+    model.add(LSTM(64))
+    model.add(Dropout(0.3))
+    model.add(Dense(2, activation='sigmoid'))  # Rumor/NonRumor
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
+
+
 # Displaying relevant data of a history object, including curves of loss and accuracy during training
 def unpackHistoryAndBuildGraphs(history):
-    import matplotlib.pyplot as plt
-
     # Unpack history
     history, accuracy, val_accuracy, loss, val_loss, epochs, numberOfEpochs = unpackHistory(history)
     drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs)
@@ -196,9 +195,8 @@ def unpackHistoryAndBuildGraphs(history):
     accuracy = "{:.2f}".format(accuracy)
     loss = val_loss[-1]  # Last Loss
     loss = "{:.2f}".format(loss)
+    return numberOfEpochs, accuracy, loss
 
-    ######### SHAY Check if we need to return the library 'plt'. Can this be removed from the return?
-    return plt, numberOfEpochs, accuracy, loss
 
 def unpackHistory(history):
     history = history.history
@@ -210,11 +208,12 @@ def unpackHistory(history):
     numberOfEpochs = len(accuracy)
     return history, accuracy, val_accuracy, loss, val_loss, epochs, numberOfEpochs
 
+
 def drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs):
     # Accuracy Graph
     plt.figure()
-    plt.plot(epochs, accuracy, '-b', label='Training Accuracy')
-    plt.plot(epochs, val_accuracy, '--ok', label='Validation Accuracy')
+    plt.plot(epochs, accuracy, '-b', label='Training Accuracy')             # -  = Solid Line; b = Blue Color
+    plt.plot(epochs, val_accuracy, '--ok', label='Validation Accuracy')     # -- = Dashed Line; o = Circles; k = Black Color
     plt.title('Training and Validation Accuracy')
     plt.legend()
     plt.savefig('graphs/graphAccuracy.png')
@@ -225,15 +224,15 @@ def drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs):
     plt.plot(epochs, val_loss, '--ok', label='Validation Loss')
     plt.title('Training and Validation Loss')
     plt.legend()
-    # x = plt.show()  ###### SHAY THIS MAYBE USED TO DIPLAY IN REAL-TIME ???
     plt.savefig('graphs/graphLoss.png')
 
-def main_train():
-    dataSet = loadDataSet()
-    x_train, x_test, y_train, y_test = makeBatches(dataSet)
-    history, totalRunTime, startTime = trainModel(x_train, x_test, y_train, y_test)
-    plt, no_of_epochs, acc, los = unpackHistoryAndBuildGraphs(history)
-    return plt, totalRunTime, startTime, no_of_epochs, acc, los
+
+# MAIN FUNCTION FOR PREDICTING
+def predictTextFromFile(fileAddress):
+    dataSetWithTextToPredict = readFileAndAddTextToDataSet(fileAddress)
+    batchToPredict = createPredictionBatchFromDataSet(dataSetWithTextToPredict)
+    predictionResult, predictionIndex, predictionImage = predictTextFromBatch(batchToPredict)
+    return predictionResult, predictionIndex, predictionImage
 
 
 def readFileAndAddTextToDataSet(fileAddress):
@@ -270,7 +269,6 @@ def predictTextFromBatch(batchToPredict):
     model = load_model(modelAddress)
     y = -1  # Index of our text to predict within the batchToPredict (y=-1 == y=LastPosition)
     textToPredict = batchToPredict[y, None]
-    # prediction = model.predict(batchToPredict[y, None])
     prediction = model.predict(textToPredict)
     predictionIndex = np.argmax(prediction[0])
     if predictionIndex == 0:
@@ -281,13 +279,6 @@ def predictTextFromBatch(batchToPredict):
         predictionImage = 'pics/rumor.png'
         predictionResult = str(int((1 - prediction[0][1]) * 100)) + "% Non-Rumor\n" + str(
             int(prediction[0][1] * 100)) + "% Rumor"
-    return predictionResult, predictionIndex, predictionImage
-
-
-def predictTextFromFile(fileAddress):
-    dataSetWithTextToPredict = readFileAndAddTextToDataSet(fileAddress)
-    batchToPredict = createPredictionBatchFromDataSet(dataSetWithTextToPredict)
-    predictionResult, predictionIndex, predictionImage = predictTextFromBatch(batchToPredict)
     return predictionResult, predictionIndex, predictionImage
 
 
@@ -304,11 +295,11 @@ except ImportError:  # Python 3
     import tkinter.font as tkFont
     import tkinter.ttk as ttk
 
-
-# SOME UI FUNCTIONS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GRAPHICAL USER INTERFACE ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def drawAxils(self):
-    self.UI.create_oval(self.widthHalf - 5, self.heightHalf - 5, self.widthHalf + 5, self.heightHalf + 5,
-                        fill='black')  # Dot in the middle
+    self.UI.create_oval(self.widthHalf - 5, self.heightHalf - 5, self.widthHalf + 5, self.heightHalf + 5, fill='black')  # Dot in the middle
     self.UI.create_line(self.widthHalf, 0, self.widthHalf, self.canvasHeight, fill='black', width=5)  # Vertical Line
     self.UI.create_line(0, self.heightHalf, self.canvasWidth, self.heightHalf, fill='black', width=5)  # Horizonal Line
 
@@ -321,8 +312,7 @@ def createCanvas(self, master, title):
     self.widthHalf = self.canvasWidth / 2
     self.heightHalf = self.canvasHeight / 2
     self.python_green = "white"
-    self.UI = Canvas(self.root, bg='#6A53E1', height=self.canvasHeight,
-                     width=self.canvasWidth)  # Create a canvas window
+    self.UI = Canvas(self.root, bg='#6A53E1', height=self.canvasHeight, width=self.canvasWidth)  # Create a canvas window
     drawTriangle(self)  # Create a white triangle on the bottom right
     self.widgets()
 
@@ -330,15 +320,13 @@ def createCanvas(self, master, title):
 def drawTriangle(self):
     # Create a white triangle on the bottom right
     #                X1                    Y1                      X2                 Y2                   X3                        Y3
-    points = [self.canvasWidth, self.canvasHeight * 0.5, self.canvasWidth, self.canvasHeight, self.canvasWidth * 0.65,
-              self.canvasHeight]
+    points = [self.canvasWidth, self.canvasHeight * 0.5, self.canvasWidth, self.canvasHeight, self.canvasWidth * 0.65, self.canvasHeight]
     self.UI.create_polygon(points, outline=self.python_green, fill='white', width=3)
 
 
 def drawAlphaText(self):
     halfOfText = locateMiddleOfText(11, "Call At Rumor 2020 V0.01 alpha prototype")
-    Label(self.UI, text="Call At Rumor 2020 V0.01 alpha prototype", fg="#CAD7EE", bg='#6A53E1',
-          font=('Montserrat_Medium 11 italic')) \
+    Label(self.UI, text="Call At Rumor 2020 V0.01 alpha prototype", fg="#CAD7EE", bg='#6A53E1', font=('Montserrat_Medium 11 italic')) \
         .place(x=self.widthHalf - halfOfText, y=self.canvasHeight - 120)
 
 
@@ -364,14 +352,12 @@ class PageMain():
         # Button Rumor
         offsetFromMiddle = 200
         halfOfText = locateMiddleOfText(28, "<< RUMOR?")
-        self.buttonRumor = Button(self.UI, text="<< RUMOR?", fg="white", bg='#6A53E1', font=('Antonio 28'),
-                                  borderwidth=0, command=self.gotoPageRumor)
+        self.buttonRumor = Button(self.UI, text="<< RUMOR?", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0, command=self.gotoPageRumor)
         self.buttonRumor.place(x=self.widthHalf - halfOfText - offsetFromMiddle, y=self.canvasHeight * .35)
 
         # Button Train
         halfOfText = locateMiddleOfText(28, "TRAIN! >>")
-        self.buttonTrain = Button(self.UI, text="TRAIN! >>", fg="white", bg='#6A53E1', font=('Antonio 28'),
-                                  borderwidth=0, command=self.gotoPageTrain)
+        self.buttonTrain = Button(self.UI, text="TRAIN! >>", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0, command=self.gotoPageTrain)
         self.buttonTrain.place(x=self.widthHalf - halfOfText + offsetFromMiddle, y=self.canvasHeight * .35)
 
         # Alpha
@@ -390,13 +376,11 @@ class PageMain():
 class PageRumor():
     def __init__(self, master):
         print("In Rumor Page")
-        # self.root.option_add("*TCombobox*Background", 'black')
         self.lang = StringVar()
         self.train_data = StringVar()
         self.type = IntVar()
         self.test_subject = StringVar()
         self.rumor = True
-        self.a1 = None
         createCanvas(self, master, "Call At Rumor")
         # drawAxils(self)
 
@@ -449,17 +433,16 @@ class PageRumor():
         # GO BUTTON INITIALIZATION HERE
         self.okb2 = PhotoImage(file="pics\go1.png")
         self.tm2 = self.okb2.subsample(1, 1)
-        self.a1 = Button(self.UI, bg='#6A53E1', border=0, text='action', image=self.tm2)
+        self.butttonGo = Button(self.UI, bg='#6A53E1', border=0, text='action', image=self.tm2)
 
         # Event Handler
-        self.a1.bind("<ButtonPress-1>", self.go_now)
+        self.butttonGo.bind("<ButtonPress-1>", self.go_now)
         goButtonPlacement_Y = self.canvasHeight * 0.6
-        self.a1_window = self.UI.create_window(self.canvasWidth / 2, goButtonPlacement_Y, window=self.a1)
+        self.butttonGo_window = self.UI.create_window(self.canvasWidth / 2, goButtonPlacement_Y, window=self.butttonGo)
         self.UI.pack()
 
         # Go Back To 'Menu' Button
-        self.buttonMenu = Button(self.UI, text="MENU >>", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0,
-                                 command=self.go_back)
+        self.buttonMenu = Button(self.UI, text="MENU >>", fg="white", bg='#6A53E1', font=('Antonio 28'), borderwidth=0, command=self.go_back)
         self.buttonMenu.place(x=self.canvasWidth - 150, y=self.canvasHeight * .35)
 
         # Alpha
@@ -487,7 +470,7 @@ class PageRumor():
         self.img = self.UI.create_image(self.canvasWidth / 2, resultCoordinate_Y, image=self.right)
         self.UI.pack()
 
-        self.UI.delete(self.a1_window)  # Remove Go Button
+        self.UI.delete(self.butttonGo_window)  # Remove Go Button
         self.UI.itemconfigure(self.img, state=tk.NORMAL)
         Label(self.UI, text=predictionResult, fg="white", bg='#6A53E1', font=('Montserrat_Medium 11'), pady=5, padx=5) \
             .place(x=(self.canvasWidth / 2.2) + 20, y=resultCoordinate_Y + 40)
@@ -737,7 +720,7 @@ class Train_Page:
         self.progressbar.start()
 
         # Start training
-        plt, time, start, no_of_epochs, acc, los = main_train()
+        time, start, no_of_epochs, acc, los = main_train()
 
         # This is the function to update epoch loss and accuracy values
         self.update_values(no_of_epochs, acc, los)
