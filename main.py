@@ -18,11 +18,16 @@ import matplotlib
 
 matplotlib.use('Agg')  # Render *.PNG filetyped for high quality images using the Anti-Grain Geometry engine.
 
+datasetDefaultAddress = "data/train.csv"
+datasetAddress = datasetDefaultAddress
+
+modelDefaultAddress = "modelCallRumor.h5"
+modelAddress = modelDefaultAddress
 
 # Load the training data file
 def loadDataSet():
     import pandas as pd
-    data = pd.read_csv("data/train.csv")  # Load the training data
+    data = pd.read_csv(datasetAddress)  # Load the training data
     data = data.dropna()  # Drop null values
     data.reset_index(drop=True, inplace=True)  # Create new indexes for rows (drop=True) on current data (inplace=True)
     return data
@@ -164,8 +169,8 @@ def trainModel(x_train, x_test, y_train, y_test):
     early_stop = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
 
     # Save the best model valued by 'val_accuracy'
-    checkpoint = ModelCheckpoint('modelCallRumor.h5', monitor='val_accuracy', verbose=1, save_best_only=True,
-                                 mode='max')
+    global modelDefaultAddress
+    checkpoint = ModelCheckpoint(modelDefaultAddress, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
 
     model = rnnWithLSTM()
 
@@ -173,8 +178,7 @@ def trainModel(x_train, x_test, y_train, y_test):
     # Begin training the model.
     #  - history: Contains a record of training loss values and metrics values at successive epochs,
     #    as well as validation loss values and validation metrics values (if applicable).
-    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=100, batch_size=1000,
-                        callbacks=[early_stop, checkpoint])
+    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=100, batch_size=1000, callbacks=[early_stop, checkpoint])
     totalRunTime = datetime.now() - startTime
 
     return history, totalRunTime, startTime
@@ -186,25 +190,8 @@ def unpackHistoryAndBuildGraphs(history):
 
     # Unpack history
     history, accuracy, val_accuracy, loss, val_loss, epochs, numberOfEpochs = unpackHistory(history)
+    drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs)
 
-    # Accuracy Graph
-    plt.figure()
-    plt.plot(epochs, accuracy, '-b', label='Training Accuracy')
-    plt.plot(epochs, val_accuracy, '--ok', label='Validation Accuracy')
-    plt.title('Training and Validation Accuracy')
-    plt.legend()
-    plt.savefig('graphs/graphAccuracy.png')
-
-    # Loss Graph
-    plt.figure()
-    plt.plot(epochs, loss, '-m', label='Training Loss')
-    plt.plot(epochs, val_loss, '--ok', label='Validation Loss')
-    plt.title('Training and Validation Loss')
-    plt.legend()
-    # x = plt.show()  ###### SHAY THIS MAYBE USED TO DIPLAY IN REAL-TIME ???
-    plt.savefig('graphs/graphLoss.png')
-
-    ########## SHAY Check if should use 'val_accuracy' or just 'accuracy'. Same for 'val_loss' & 'loss'
     accuracy = val_accuracy[-1]  # Last Accuracy
     accuracy = "{:.2f}".format(accuracy)
     loss = val_loss[-1]  # Last Loss
@@ -223,6 +210,24 @@ def unpackHistory(history):
     numberOfEpochs = len(accuracy)
     return history, accuracy, val_accuracy, loss, val_loss, epochs, numberOfEpochs
 
+def drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs):
+    # Accuracy Graph
+    plt.figure()
+    plt.plot(epochs, accuracy, '-b', label='Training Accuracy')
+    plt.plot(epochs, val_accuracy, '--ok', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.legend()
+    plt.savefig('graphs/graphAccuracy.png')
+
+    # Loss Graph
+    plt.figure()
+    plt.plot(epochs, loss, '-m', label='Training Loss')
+    plt.plot(epochs, val_loss, '--ok', label='Validation Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    # x = plt.show()  ###### SHAY THIS MAYBE USED TO DIPLAY IN REAL-TIME ???
+    plt.savefig('graphs/graphLoss.png')
+
 def main_train():
     dataSet = loadDataSet()
     x_train, x_test, y_train, y_test = makeBatches(dataSet)
@@ -233,7 +238,8 @@ def main_train():
 
 def readFileAndAddTextToDataSet(fileAddress):
     # Load the data set
-    dataSet = pd.read_csv("data/train.csv")
+    global datasetAddress
+    dataSet = pd.read_csv(datasetAddress)
     dataSet = dataSet.dropna()
     dataSet.reset_index(drop=True, inplace=True)
 
@@ -260,7 +266,8 @@ def createPredictionBatchFromDataSet(dataSet):
 
 def predictTextFromBatch(batchToPredict):
     from tensorflow.keras.models import load_model
-    model = load_model('modelCallRumor.h5')
+    global modelAddress
+    model = load_model(modelAddress)
     y = -1  # Index of our text to predict within the batchToPredict (y=-1 == y=LastPosition)
     textToPredict = batchToPredict[y, None]
     # prediction = model.predict(batchToPredict[y, None])
@@ -661,22 +668,22 @@ class Train_Page:
         self.a1 = Button(self.UI, bg='#6A53E1', border=0, image=self.okb1, command=self.start)
         self.a1.place(x=self.widthHalf-110, y=self.heightHalf-117)
 
-        # USE BUTTON
-        self.okb2 = PhotoImage(file="pics/useDirty.png")
-        self.tm2 = self.okb2.subsample(1, 1)
-        self.a2 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm2)
-        self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight*0.28, window=self.a2)
+        # DBD: USE BUTTON
+        #self.okb2 = PhotoImage(file="pics/useDirty.png")
+        #self.tm2 = self.okb2.subsample(1, 1)
+        #self.a2 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm2)
+        #self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight*0.28, window=self.a2)
 
-        # EXPORT BUTTON
-        self.okb3 = PhotoImage(file="pics/exportDirty.png")
-        self.tm3 = self.okb3.subsample(1, 1)
-        self.a3 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm3)
-        self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight*0.42, window=self.a3)
+        # DBD: EXPORT BUTTON
+        #self.okb3 = PhotoImage(file="pics/exportDirty.png")
+        #self.tm3 = self.okb3.subsample(1, 1)
+        #self.a3 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm3) # SHAY!!! REMOVE THE COMMAND FROM THERE. DEBUG ONLY
+        #self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight*0.42, window=self.a3)
 
         # IMPORT BUTTON
         self.okb4 = PhotoImage(file="pics/importClean.png")
         self.tm4 = self.okb4.subsample(1, 1)
-        self.a4 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm4, command=self.openFile)
+        self.a4 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm4, command=self.datasetChooser)
         self.a4.place(x=self.widthHalf + 203, y=self.canvasHeight*0.21)
 
         # FOR PROGRESSBAR
@@ -690,23 +697,23 @@ class Train_Page:
 
 # When the "Begin Training" button is clicked
     def start(self):
-        self.UI.delete(self.a2_window)
-        self.UI.delete(self.a3_window)
+        #DBD: self.UI.delete(self.a2_window)
+        #DBD: self.UI.delete(self.a3_window)
         self.UI.delete(self.a5_window)
         self.UI.delete(self.a6_window)
         self.UI.delete(self.a7_window)
 
-        # USE BUTTON
-        self.okb2 = PhotoImage(file="pics/useClean.png")
-        self.tm2 = self.okb2.subsample(1, 1)
-        self.a2 = Button(self.UI, bg='#6A53E1', border=0, command=self.openFile, image=self.tm2)
-        self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight * 0.28, window=self.a2)
+        # DBD: USE BUTTON
+        #self.okb2 = PhotoImage(file="pics/useClean.png")
+        #self.tm2 = self.okb2.subsample(1, 1)
+        #self.a2 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm2, command=self.openFile)
+        #self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight * 0.28, window=self.a2)
 
-        # EXPORT BUTTON
-        self.okb3 = PhotoImage(file="pics/exportClean.png")
-        self.tm3 = self.okb3.subsample(1, 1)
-        self.a3 = Button(self.UI, bg='#6A53E1', border=0, command=self.openFile, image=self.tm3)
-        self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight * 0.42, window=self.a3)
+        # DBD: EXPORT BUTTON
+        #self.okb3 = PhotoImage(file="pics/exportClean.png")
+        #self.tm3 = self.okb3.subsample(1, 1)
+        #self.a3 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm3)
+        #self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight * 0.42, window=self.a3)
 
         # PLAY BUTTON
         self.okb5 = PhotoImage(file="pics/playDirty.png")
@@ -754,6 +761,12 @@ class Train_Page:
 
     def go_back(self):
         reset_state(0)
+
+    def datasetChooser(self):
+        from tkinter.filedialog import askopenfilename
+        global datasetAddress
+        datasetAddress = askopenfilename()
+        print(datasetAddress)
 
     def openFile(self):
         from tkinter.filedialog import askopenfilename
