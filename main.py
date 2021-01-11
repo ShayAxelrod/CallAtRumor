@@ -193,7 +193,7 @@ def unpackHistoryAndBuildGraphs(history):
     plt.plot(epochs, val_accuracy, '--ok', label='Validation Accuracy')
     plt.title('Training and Validation Accuracy')
     plt.legend()
-    plt.savefig('data/graphAccuracy.png')
+    plt.savefig('graphs/graphAccuracy.png')
 
     # Loss Graph
     plt.figure()
@@ -202,7 +202,7 @@ def unpackHistoryAndBuildGraphs(history):
     plt.title('Training and Validation Loss')
     plt.legend()
     # x = plt.show()  ###### SHAY THIS MAYBE USED TO DIPLAY IN REAL-TIME ???
-    plt.savefig('data/graphLoss.png')
+    plt.savefig('graphs/graphLoss.png')
 
     ########## SHAY Check if should use 'val_accuracy' or just 'accuracy'. Same for 'val_loss' & 'loss'
     accuracy = val_accuracy[-1]  # Last Accuracy
@@ -775,12 +775,12 @@ class Train_Page:
 
         width_x = self.canvasWidth*0.15  # 250/1920
         height_y = self.canvasHeight*.205
-        self.graph = PhotoImage(file="data/graphAccuracy.png")
+        self.graph = PhotoImage(file="graphs/graphAccuracy.png")
         self.graph = self.graph.zoom(22)
         self.graph = self.graph.subsample(26)
         self.img = canvas.create_image(width_x, height_y, image=self.graph)
 
-        self.graph1 = PhotoImage(file="data/graphLoss.png")
+        self.graph1 = PhotoImage(file="graphs/graphLoss.png")
         self.graph1 = self.graph1.zoom(22)
         self.graph1 = self.graph1.subsample(26)
         self.img1 = canvas.create_image(width_x, height_y + 420, image=self.graph1)
