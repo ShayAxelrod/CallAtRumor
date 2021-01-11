@@ -409,12 +409,14 @@ class PageRumor():
         Label(self.UI, text='TRAIN DATA', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
             .place(x=self.widthHalf - halfOfText - 58, y=self.canvasHeight * 0.31)
 
+
         training = ttk.Combobox(self.UI, width=23, textvariable=self.train_data, font=('Calibri 18'))
         training['values'] = (' English US V0.02 (latest)',
                               ' Import Pre-Trained Data')
         training.grid(column=1, row=5)
         training.current(0)
         training.place(x=self.widthHalf - 106, y=self.canvasHeight * 0.35)
+        training.bind("<ButtonPress-1>", self.getAndSetAddressOfTrainedModel)
 
         halfOfText = locateMiddleOfText(18, "TEST SUBJECT")
         Label(self.UI, text='TEST SUBJECT', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
@@ -422,13 +424,12 @@ class PageRumor():
 
         combostyle = ttk.Style()
         combostyle.configure('TCombobox', background="#ffcc66", fieldbackground="#ffff99")
-        self.dataset = ttk.Combobox(self.UI, width=23, textvariable=self.test_subject, font=('Calibri 18'),
-                                    style='TCombobox')
+        self.dataset = ttk.Combobox(self.UI, width=23, textvariable=self.test_subject, font=('Calibri 18'), style='TCombobox')
         self.dataset['values'] = (' Upload Text File',)
         self.dataset.grid(column=1, row=5)
         self.dataset.current(0)
         self.dataset.place(x=self.widthHalf + 208, y=self.canvasHeight * 0.35)
-        self.dataset.bind("<ButtonPress-1>", self.openFile)
+        self.dataset.bind("<ButtonPress-1>", self.getAndSetAddressOfPredictionFile)
 
         # GO BUTTON INITIALIZATION HERE
         self.okb2 = PhotoImage(file="pics\go1.png")
@@ -438,7 +439,7 @@ class PageRumor():
         # Event Handler
         self.butttonGo.bind("<ButtonPress-1>", self.go_now)
         goButtonPlacement_Y = self.canvasHeight * 0.6
-        self.butttonGo_window = self.UI.create_window(self.canvasWidth / 2, goButtonPlacement_Y, window=self.butttonGo)
+        self.buttonGo_window = self.UI.create_window(self.canvasWidth / 2, goButtonPlacement_Y, window=self.butttonGo)
         self.UI.pack()
 
         # Go Back To 'Menu' Button
@@ -450,6 +451,7 @@ class PageRumor():
 
         self.UI.pack()
 
+    #~~~ EVENT HANDLERS ~~#
     # Go back to the menu page
     def go_back(self):
         reset_state(0)
@@ -462,26 +464,32 @@ class PageRumor():
         self.show_Results(predictionImage, predictionResult)
 
     def show_Results(self, predictionAddress, predictionResult):
-        # print(img)
         print("Showing Results")
-        self.right = PhotoImage(file=predictionAddress)
+        # Remove the Go button
+        self.UI.delete(self.buttonGo_window)
 
+        # Display the predicted image (the red X or the green V)
         resultCoordinate_Y = self.canvasHeight * 0.46
-        self.img = self.UI.create_image(self.canvasWidth / 2, resultCoordinate_Y, image=self.right)
+        self.predictionImage = PhotoImage(file=predictionAddress)
+        self.img = self.UI.create_image(self.canvasWidth / 2, resultCoordinate_Y, image=self.predictionImage, state=tk.NORMAL)
         self.UI.pack()
 
-        self.UI.delete(self.butttonGo_window)  # Remove Go Button
-        self.UI.itemconfigure(self.img, state=tk.NORMAL)
+        # Display the percentages under the predicted image
         Label(self.UI, text=predictionResult, fg="white", bg='#6A53E1', font=('Montserrat_Medium 11'), pady=5, padx=5) \
             .place(x=(self.canvasWidth / 2.2) + 20, y=resultCoordinate_Y + 40)
 
+    def getAndSetAddressOfTrainedModel(self, event):
+        from tkinter.filedialog import askopenfilename
+        global modelAddress
+        modelAddress = askopenfilename()
+        print(modelAddress)
+
     # Open File Dialog and return the address to the selected file
-    def openFile(self, event):
+    def getAndSetAddressOfPredictionFile(self, event):
         from tkinter.filedialog import askopenfilename
         global filename_predict
         filename_predict = askopenfilename()
         print(filename_predict)
-
 
 class CircularProgressbar(object):
     def __init__(self, sc_width, canvas, x0, y0, x1, y1, width=2, start_ang=270, full_extent=360):
@@ -497,6 +505,7 @@ class CircularProgressbar(object):
         self.canvas.create_oval(self.x0-w2, self.y0-w2, self.x1+w2, self.y1+w2, fill="cyan", outline='#6A53E1')
         self.canvas.create_oval(self.x0+w2, self.y0+w2, self.x1-w2, self.y1-w2, fill="#6A53E1", outline='#24304D')
 
+        # Numbers around the progressbar
         new_width = self.x0
         self.custom_font = tkFont.Font(family="Helvetica", size=20, weight='bold')
         self.canvas.create_text(self.x0+x0/7.54, self.y0+y0/0.735, text='12', font=self.custom_font, fill="white")
@@ -507,6 +516,7 @@ class CircularProgressbar(object):
         self.canvas.create_text(new_width+x0/1.77, self.y0+y0/1.16, text='75', font=self.custom_font, fill="white")
         self.canvas.create_text(new_width+x0/2.012, self.y0+y0/0.735, text='87', font=self.custom_font, fill="white")
 
+        # This will display the percentage in big
         fontPercentage = tkFont.Font(family="Antonio", size=40)
         self.result = self.canvas.create_text(new_width+x0/3.177, self.y0+y0/0.63 - 20, text='0', font=fontPercentage, fill="white")
 
@@ -562,7 +572,7 @@ class Train_Page:
         self.loss = "0.00"
         self.accuracy = "0.00"
         self.createWidgets()
-        self.root.mainloop()
+        #self.root.mainloop()
 
     def createWidgets(self):
 
@@ -571,103 +581,101 @@ class Train_Page:
         # Alpha
         drawAlphaText(self)
 
-        points = [self.canvasWidth, 450, self.canvasWidth, self.canvasHeight, 1000, self.canvasHeight]
+        self.menuButton = Button(self.UI, text="<< MENU", fg="white", font=('Antonio 28'), bg='#6A53E1', borderwidth=0, command=self.go_back)
+        self.menuButton.place(x=50, y=self.canvasHeight * .35)
 
-        self.b1 = Button(self.UI, text="<< MENU", fg="white", font=('Antonio 28'), bg='#6A53E1', borderwidth=0, command=self.go_back)
-        self.b1.place(x=50, y=self.canvasHeight * .35)
-
-        self.b2 = Button(self.UI, text="< ADVANCED", fg="white", font=('Antonio 28'), bg='#6A53E1', borderwidth=0, command=self.advance_now)
-        self.b2.place(x=self.canvasWidth - 200, y=self.canvasHeight * .35)
+        self.advancedButton = Button(self.UI, text="< ADVANCED", fg="white", font=('Antonio 28'), bg='#6A53E1', borderwidth=0, command=self.advance_now)
+        self.advancedButton.place(x=self.canvasWidth - 200, y=self.canvasHeight * .35)
 
         # TEXT FOR 'LOSS'
-        self.okb8 = PhotoImage(file="pics/loss.png")
-        self.tm8 = self.okb8.subsample(1, 1)
-        self.a8 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm8)
-        self.a8.place(x=self.widthHalf-40, y=50)
+        self.lossImage = PhotoImage(file="pics/loss.png")
+        self.lossImageResized = self.lossImage.subsample(1, 1)
+        self.lossButton = Button(self.UI, bg='#6A53E1', border=0, image=self.lossImageResized)
+        self.lossButton.place(x=self.widthHalf-40, y=50)
 
         textImageHeight = self.canvasHeight * 0.04
-        self.loss_label = Label(self.UI, text="LOSS", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
-        self.loss_label.place(x=self.widthHalf-10, y=textImageHeight+3)
+        self.lossLabel = Label(self.UI, text="LOSS", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
+        self.lossLabel.place(x=self.widthHalf-10, y=textImageHeight+3)
 
         halfOfText = locateMiddleOfText(48, "0.00")
-        self.loss_value = Label(self.UI, text=self.loss, font=('Antonio 48'), bg='#6A53E1', fg='white')
-        self.loss_value.place(x=self.widthHalf - halfOfText + 20, y=78)
+        self.lossValue = Label(self.UI, text=self.loss, font=('Antonio 48'), bg='#6A53E1', fg='white')
+        self.lossValue.place(x=self.widthHalf - halfOfText + 20, y=78)
 
         # TEXT FOR 'EPOCH'
-        self.okb81 = PhotoImage(file="pics/epoch.png")
-        self.tm81 = self.okb81.subsample(1, 1)
-        self.a81 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm81)
-        self.a81.place(x=self.widthHalf - 240, y=50)
+        self.epochImage = PhotoImage(file="pics/epoch.png")
+        self.epochImageResized = self.epochImage.subsample(1, 1)
+        self.epochButton = Button(self.UI, bg='#6A53E1', border=0, image=self.epochImageResized)
+        self.epochButton.place(x=self.widthHalf - 240, y=50)
 
-        self.epoch_label = Label(self.UI, text="EPOCH", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
-        self.epoch_label.place(x=self.widthHalf - 210, y=textImageHeight+3)
+        self.epochLabel = Label(self.UI, text="EPOCH", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
+        self.epochLabel.place(x=self.widthHalf - 210, y=textImageHeight+3)
 
         halfOfText = locateMiddleOfText(48, "00")
-        self.epoch_value = Label(self.UI, text=self.epoch, font=('Antonio 48'), bg='#6A53E1', fg='white')
-        self.epoch_value.place(x=self.widthHalf - halfOfText - 165, y=78)
+        self.epochValue = Label(self.UI, text=self.epoch, font=('Antonio 48'), bg='#6A53E1', fg='white')
+        self.epochValue.place(x=self.widthHalf - halfOfText - 165, y=78)
 
         # TEXT FOR 'ACCURACY'
-        self.okb9 = PhotoImage(file="pics/accuracy.png")
-        self.tm9 = self.okb9.subsample(1, 1)
-        self.a9 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm9)
-        self.a9.place(x=self.widthHalf + 140, y=50)
+        self.accuracyImage = PhotoImage(file="pics/accuracy.png")
+        self.accuracyImageResized = self.accuracyImage.subsample(1, 1)
+        self.accuracyButton = Button(self.UI, bg='#6A53E1', border=0, image=self.accuracyImageResized)
+        self.accuracyButton.place(x=self.widthHalf + 140, y=50)
 
-        self.accuracy_label = Label(self.UI, text="ACCURACY", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
-        self.accuracy_label.place(x=self.widthHalf + 170, y=textImageHeight + 3)
+        self.accuracyLabel = Label(self.UI, text="ACCURACY", font=('Montserrat_Medium 20'), bg='#6A53E1', fg='white')
+        self.accuracyLabel.place(x=self.widthHalf + 170, y=textImageHeight + 3)
 
         halfOfText = locateMiddleOfText(48, "0.00")
-        self.accuracy_value = Label(self.UI, text=self.accuracy, font=('Antonio 48'), bg='#6A53E1', fg='white')
-        self.accuracy_value.place(x=self.widthHalf - halfOfText + 240, y=78)
+        self.accuracyValue = Label(self.UI, text=self.accuracy, font=('Antonio 48'), bg='#6A53E1', fg='white')
+        self.accuracyValue.place(x=self.widthHalf - halfOfText + 240, y=78)
 
         self.buttonHeight = self.canvasHeight*0.22
         # PLAY BUTTON
-        self.okb5 = PhotoImage(file="pics/playClean.png")
-        self.tm5 = self.okb5.subsample(1, 1)
-        self.a5 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm5, command=self.start)
-        self.a5_window = self.UI.create_window(self.widthHalf-121, self.buttonHeight, window=self.a5)
+        self.playImage = PhotoImage(file="pics/playClean.png")
+        self.playImageResized = self.playImage.subsample(1, 1)
+        self.playButton = Button(self.UI, bg='#6A53E1', border=0, image=self.playImageResized, command=self.start)
+        self.playButton_window = self.UI.create_window(self.widthHalf-121, self.buttonHeight, window=self.playButton)
 
         # PAUSE BUTTON
-        self.okb6 = PhotoImage(file="pics/pauseDirty.png")
-        self.tm6 = self.okb6.subsample(1, 1)
-        self.a6 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm6)
-        self.a6_window = self.UI.create_window(self.widthHalf-38, self.buttonHeight, window=self.a6)
+        self.pauseImage = PhotoImage(file="pics/pauseDirty.png")
+        self.pauseImageResized = self.pauseImage.subsample(1, 1)
+        self.pauseButton = Button(self.UI, bg='#6A53E1', border=0, image=self.pauseImageResized)
+        self.pauseButton_window = self.UI.create_window(self.widthHalf-38, self.buttonHeight, window=self.pauseButton)
 
         # STOP BUTTON
-        self.okb7 = PhotoImage(file="pics/stopDirty.png")
-        self.tm7 = self.okb7.subsample(1, 1)
-        self.a7 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm7, command=self.pause)
-        self.a7_window = self.UI.create_window(self.widthHalf+40, self.buttonHeight, window=self.a7)
+        self.stopImage = PhotoImage(file="pics/stopDirty.png")
+        self.stopImageResized = self.stopImage.subsample(1, 1)
+        self.stopButton = Button(self.UI, bg='#6A53E1', border=0, image=self.stopImageResized, command=self.pause)
+        self.stopButton_window = self.UI.create_window(self.widthHalf+40, self.buttonHeight, window=self.stopButton)
 
         # REPLAY BUTTON
-        self.okb71 = PhotoImage(file="pics/replayDirty.png")
-        self.tm71 = self.okb71.subsample(1, 1)
-        self.a71 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm71)
-        self.a71_window = self.UI.create_window(self.widthHalf+118, self.buttonHeight, window=self.a71)
+        self.replayImage = PhotoImage(file="pics/replayDirty.png")
+        self.replayImageResized = self.replayImage.subsample(1, 1)
+        self.replayButton = Button(self.UI, bg='#6A53E1', border=0, image=self.replayImageResized)
+        self.replayButton_window = self.UI.create_window(self.widthHalf+118, self.buttonHeight, window=self.replayButton)
 
         # BEGIN TRAINING BUTTON
         from PIL import ImageTk, Image
-        self.img = Image.open("pics/beginTrainingClean.png")
-        self.okb1 = ImageTk.PhotoImage(self.img)
-        self.a1 = Button(self.UI, bg='#6A53E1', border=0, image=self.okb1, command=self.start)
-        self.a1.place(x=self.widthHalf-110, y=self.heightHalf-117)
+        self.beginTrainingImage = Image.open("pics/beginTrainingClean.png")
+        self.beginTrainingTKImage = ImageTk.PhotoImage(self.beginTrainingImage)
+        self.beginTrainingButton = Button(self.UI, bg='#6A53E1', border=0, image=self.beginTrainingTKImage, command=self.start)
+        self.beginTrainingButton.place(x=self.widthHalf-110, y=self.heightHalf-117)
 
         # DBD: USE BUTTON
-        #self.okb2 = PhotoImage(file="pics/useDirty.png")
-        #self.tm2 = self.okb2.subsample(1, 1)
-        #self.a2 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm2)
-        #self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight*0.28, window=self.a2)
+        #self.useImage = PhotoImage(file="pics/useDirty.png")
+        #self.useImageResized = self.useImage.subsample(1, 1)
+        #self.useImageButton = Button(self.UI, bg='#6A53E1', border=0, image=self.useImageResized)
+        #self.useImageButton_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight*0.28, window=self.useImageButton)
 
         # DBD: EXPORT BUTTON
-        #self.okb3 = PhotoImage(file="pics/exportDirty.png")
-        #self.tm3 = self.okb3.subsample(1, 1)
-        #self.a3 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm3) # SHAY!!! REMOVE THE COMMAND FROM THERE. DEBUG ONLY
-        #self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight*0.42, window=self.a3)
+        #self.exportImage = PhotoImage(file="pics/exportDirty.png")
+        #self.exportImageResized = self.exportImage.subsample(1, 1)
+        #self.exportButton = Button(self.UI, bg='#6A53E1', border=0, image=self.exportImageResized)
+        #self.exportButton_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight*0.42, window=self.exportButton)
 
         # IMPORT BUTTON
-        self.okb4 = PhotoImage(file="pics/importClean.png")
-        self.tm4 = self.okb4.subsample(1, 1)
-        self.a4 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm4, command=self.datasetChooser)
-        self.a4.place(x=self.widthHalf + 203, y=self.canvasHeight*0.21)
+        self.importImage = PhotoImage(file="pics/importClean.png")
+        self.importImageResized = self.importImage.subsample(1, 1)
+        self.importButton = Button(self.UI, bg='#6A53E1', border=0, image=self.importImageResized, command=self.datasetChooser)
+        self.importButton.place(x=self.widthHalf + 203, y=self.canvasHeight*0.21)
 
         # FOR PROGRESSBAR
         x0 = self.canvasWidth * 0.365
@@ -680,41 +688,41 @@ class Train_Page:
 
 # When the "Begin Training" button is clicked
     def start(self):
-        #DBD: self.UI.delete(self.a2_window)
-        #DBD: self.UI.delete(self.a3_window)
-        self.UI.delete(self.a5_window)
-        self.UI.delete(self.a6_window)
-        self.UI.delete(self.a7_window)
+        #DBD: self.UI.delete(self.useImageButton_window)
+        #DBD: self.UI.delete(self.exportButton_window)
+        self.UI.delete(self.playButton_window)
+        self.UI.delete(self.pauseButton_window)
+        self.UI.delete(self.stopButton_window)
 
         # DBD: USE BUTTON
-        #self.okb2 = PhotoImage(file="pics/useClean.png")
-        #self.tm2 = self.okb2.subsample(1, 1)
-        #self.a2 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm2, command=self.openFile)
-        #self.a2_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight * 0.28, window=self.a2)
+        #self.useImage = PhotoImage(file="pics/useClean.png")
+        #self.useImageResized = self.useImage.subsample(1, 1)
+        #self.useButton = Button(self.UI, bg='#6A53E1', border=0, image=self.useImageResized, command=self.openFile)
+        #self.useButton_window = self.UI.create_window(self.widthHalf - 250, self.canvasHeight * 0.28, window=self.useButton)
 
         # DBD: EXPORT BUTTON
-        #self.okb3 = PhotoImage(file="pics/exportClean.png")
-        #self.tm3 = self.okb3.subsample(1, 1)
-        #self.a3 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm3)
-        #self.a3_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight * 0.42, window=self.a3)
+        #self.exportImage = PhotoImage(file="pics/exportClean.png")
+        #self.exportImageResized = self.exportImage.subsample(1, 1)
+        #self.exportButton = Button(self.UI, bg='#6A53E1', border=0, image=self.exportImageResized)
+        #self.exportButton_window = self.UI.create_window(self.widthHalf - 341, self.canvasHeight * 0.42, window=self.exportButton)
 
         # PLAY BUTTON
-        self.okb5 = PhotoImage(file="pics/playDirty.png")
-        self.tm5 = self.okb5.subsample(1, 1)
-        self.a5 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm5)
-        self.a5_window = self.UI.create_window(self.widthHalf - 121, self.buttonHeight, window=self.a5)
+        self.playImage = PhotoImage(file="pics/playDirty.png")
+        self.playImageResized = self.playImage.subsample(1, 1)
+        self.playButton = Button(self.UI, bg='#6A53E1', border=0, image=self.playImageResized)
+        self.playButton_window = self.UI.create_window(self.widthHalf - 121, self.buttonHeight, window=self.playButton)
 
         # PAUSE BUTTON
-        self.okb6 = PhotoImage(file="pics/pauseClean.png")
-        self.tm6 = self.okb6.subsample(1, 1)
-        self.a6 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm6, command=self.pause)
-        self.a6_window = self.UI.create_window(self.widthHalf - 38, self.buttonHeight, window=self.a6)
+        self.pauseImage = PhotoImage(file="pics/pauseClean.png")
+        self.pauseImageResized = self.pauseImage.subsample(1, 1)
+        self.pauseButton = Button(self.UI, bg='#6A53E1', border=0, image=self.pauseImageResized, command=self.pause)
+        self.pauseButton_window = self.UI.create_window(self.widthHalf - 38, self.buttonHeight, window=self.pauseButton)
 
         # STOP BUTTON
-        self.okb7 = PhotoImage(file="pics/stopClean.png")
-        self.tm7 = self.okb7.subsample(1, 1)
-        self.a7 = Button(self.UI, bg='#6A53E1', border=0, image=self.tm7, command=self.stop)
-        self.a7_window = self.UI.create_window(self.widthHalf + 40, self.buttonHeight, window=self.a7)
+        self.stopImage = PhotoImage(file="pics/stopClean.png")
+        self.stopImageResized = self.stopImage.subsample(1, 1)
+        self.stopButton = Button(self.UI, bg='#6A53E1', border=0, image=self.stopImageResized, command=self.stop)
+        self.stopButton_window = self.UI.create_window(self.widthHalf + 40, self.buttonHeight, window=self.stopButton)
 
         # Starting the progressbar
         self.progressbar.start()
@@ -729,11 +737,11 @@ class Train_Page:
     def update_values(self, no_of_epochs, acc, los):
         # change each variable to update values here
         self.epoch = str(no_of_epochs)
-        self.epoch_value['text'] = self.epoch
+        self.epochValue['text'] = self.epoch
         self.loss = los
-        self.loss_value['text'] = self.loss
+        self.lossValue['text'] = self.loss
         self.accuracy = acc
-        self.accuracy_value['text'] = self.accuracy
+        self.accuracyValue['text'] = self.accuracy
 
     def pause(self):
         self.progressbar.toggle_pause()
@@ -751,10 +759,10 @@ class Train_Page:
         datasetAddress = askopenfilename()
         print(datasetAddress)
 
-    def openFile(self):
-        from tkinter.filedialog import askopenfilename
-        filename = askopenfilename()
-        print(filename)
+    #def openFile(self):
+    #    from tkinter.filedialog import askopenfilename
+    #    filename = askopenfilename()
+    #    print(filename)
 
     # Clicking on the advance button will open a small window with the graphs
     def advance_now(self):
@@ -766,24 +774,25 @@ class Train_Page:
         x = self.canvasWidth - wantedCanvasSize_x
         y = self.canvasHeight - wantedCanvasSize_y
         newWindow.geometry('%dx%d+%d+%d' % (wantedCanvasSize_x, wantedCanvasSize_y, x, y - 30))
-        newWindow.attributes('-alpha', 0.7)
+        newWindow.attributes('-alpha', 0.7)  # Transparency
         canvas = Canvas(newWindow, width=wantedCanvasSize_x, height=wantedCanvasSize_y, bg="black")
 
         width_x = self.canvasWidth*0.15  # 250/1920
         height_y = self.canvasHeight*.205
-        self.graph = PhotoImage(file="graphs/graphAccuracy.png")
-        self.graph = self.graph.zoom(22)
-        self.graph = self.graph.subsample(26)
-        self.img = canvas.create_image(width_x, height_y, image=self.graph)
 
-        self.graph1 = PhotoImage(file="graphs/graphLoss.png")
-        self.graph1 = self.graph1.zoom(22)
-        self.graph1 = self.graph1.subsample(26)
-        self.img1 = canvas.create_image(width_x, height_y + 420, image=self.graph1)
+        self.graphAccuracy = PhotoImage(file="graphs/graphAccuracy.png")
+        self.graphAccuracy = self.graphAccuracy.zoom(22)
+        self.graphAccuracy = self.graphAccuracy.subsample(26)
+        self.imageAccuracy = canvas.create_image(width_x, height_y, image=self.graphAccuracy)
+
+        self.graphLoss = PhotoImage(file="graphs/graphLoss.png")
+        self.graphLoss = self.graphLoss.zoom(22)
+        self.graphLoss = self.graphLoss.subsample(26)
+        self.imageLoss = canvas.create_image(width_x, height_y + 420, image=self.graphLoss)
 
         canvas.pack()
 
-# to switch between pages
+# Swiches between pagess
 def reset_state(x):
     global programState
     programState = x
@@ -792,7 +801,6 @@ def reset_state(x):
 
 
 def refresh():
-    print(programState)
     state = programState
     global current_page
     if current_page:
