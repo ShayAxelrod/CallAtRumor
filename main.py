@@ -393,34 +393,35 @@ class PageRumor():
         Label(self.UI, text='RUMOR?', fg="white", bg='#6A53E1', font=('Antonio 28'), pady=5, padx=5) \
             .place(x=self.widthHalf - halfOfText - 10, y=self.canvasHeight * 0.13)
 
-        halfOfText = locateMiddleOfText(18, "LANGUAGE")
-        Label(self.UI, text='LANGUAGE', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
-            .place(x=self.widthHalf - halfOfText - 381, y=self.canvasHeight * 0.31)
+        #DBD
+        #halfOfText = locateMiddleOfText(18, "LANGUAGE")
+        #Label(self.UI, text='LANGUAGE', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
+        #    .place(x=self.widthHalf - halfOfText - 381, y=self.canvasHeight * 0.31)
 
-        language = ttk.Combobox(self.UI, width=23, textvariable=self.lang, font=('Calibri 18'))
-        language['values'] = (' English (US)',
-                              ' Hebrew',
-                              ' Russian')
-        language.grid(column=1, row=5)
-        language.current(0)
-        language.place(x=self.widthHalf - 420, y=self.canvasHeight * 0.35)
+        #language = ttk.Combobox(self.UI, width=23, textvariable=self.lang, font=('Calibri 18'))
+        #language['values'] = (' English (US)',
+        #                      ' Hebrew',
+        #                      ' Russian')
+        #language.grid(column=1, row=5)
+        #language.current(0)
+        #language.place(x=self.widthHalf - 420, y=self.canvasHeight * 0.35)
 
         halfOfText = locateMiddleOfText(18, "TRAIN DATA")
         Label(self.UI, text='TRAIN DATA', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
-            .place(x=self.widthHalf - halfOfText - 58, y=self.canvasHeight * 0.31)
+            .place(x=self.widthHalf - halfOfText - 308, y=self.canvasHeight * 0.31)
 
 
         training = ttk.Combobox(self.UI, width=23, textvariable=self.train_data, font=('Calibri 18'))
-        training['values'] = (' English US V0.02 (latest)',
+        training['values'] = (' Default English US',
                               ' Import Pre-Trained Data')
         training.grid(column=1, row=5)
         training.current(0)
-        training.place(x=self.widthHalf - 106, y=self.canvasHeight * 0.35)
+        training.place(x=self.widthHalf - 356, y=self.canvasHeight * 0.35)
         training.bind("<ButtonPress-1>", self.getAndSetAddressOfTrainedModel)
 
         halfOfText = locateMiddleOfText(18, "TEST SUBJECT")
         Label(self.UI, text='TEST SUBJECT', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
-            .place(x=self.widthHalf - halfOfText + 262, y=self.canvasHeight * 0.31)
+            .place(x=self.widthHalf - halfOfText + 102, y=self.canvasHeight * 0.31)
 
         combostyle = ttk.Style()
         combostyle.configure('TCombobox', background="#ffcc66", fieldbackground="#ffff99")
@@ -428,7 +429,7 @@ class PageRumor():
         self.dataset['values'] = (' Upload Text File',)
         self.dataset.grid(column=1, row=5)
         self.dataset.current(0)
-        self.dataset.place(x=self.widthHalf + 208, y=self.canvasHeight * 0.35)
+        self.dataset.place(x=self.widthHalf + 48, y=self.canvasHeight * 0.35)
         self.dataset.bind("<ButtonPress-1>", self.getAndSetAddressOfPredictionFile)
 
         # GO BUTTON INITIALIZATION HERE
@@ -481,14 +482,18 @@ class PageRumor():
     def getAndSetAddressOfTrainedModel(self, event):
         from tkinter.filedialog import askopenfilename
         global modelAddress
-        modelAddress = askopenfilename()
+        modelAddressRequest = askopenfilename()
+        if modelAddressRequest != '':
+            modelAddress = modelAddressRequest
         print(modelAddress)
 
     # Open File Dialog and return the address to the selected file
     def getAndSetAddressOfPredictionFile(self, event):
         from tkinter.filedialog import askopenfilename
         global filename_predict
-        filename_predict = askopenfilename()
+        filename_predict_Request = askopenfilename()
+        if filename_predict_Request != '':
+            filename_predict = filename_predict_Request
         print(filename_predict)
 
 class CircularProgressbar(object):
@@ -756,7 +761,9 @@ class Train_Page:
     def datasetChooser(self):
         from tkinter.filedialog import askopenfilename
         global datasetAddress
-        datasetAddress = askopenfilename()
+        datasetAddressRequest = askopenfilename()
+        if datasetAddressRequest != '':
+            datasetAddress = datasetAddressRequest
         print(datasetAddress)
 
     #def openFile(self):
