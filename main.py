@@ -115,7 +115,7 @@ def makeBatches(dataset):
 def cleanText(text):  # This function clean text
     text = BeautifulSoup(text, "lxml").text  # Use as 'lxml' file
     text = text.lower()
-    text = text.replace('\n', '')  # Removes '\n'
+    text = text.replace('\n', ' ')  # Replaces '\n' with spaces
     text = text.translate(str.maketrans('', '', string.punctuation))  # Remove punctuations
     text = re.sub(r'\|\|\|', r' ', text)
     text = re.sub(r'http\S+', r'<url>', text)  # Removes URLs
