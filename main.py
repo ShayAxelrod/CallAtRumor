@@ -698,6 +698,7 @@ class Train_Page:
         self.UI.delete(self.playButton_window)
         self.UI.delete(self.pauseButton_window)
         self.UI.delete(self.stopButton_window)
+        self.UI.delete(self.replayButton_window)
 
         # DBD: USE BUTTON
         #self.useImage = PhotoImage(file="pics/useClean.png")
@@ -729,6 +730,12 @@ class Train_Page:
         self.stopButton = Button(self.UI, bg='#6A53E1', border=0, image=self.stopImageResized, command=self.stop)
         self.stopButton_window = self.UI.create_window(self.widthHalf + 40, self.buttonHeight, window=self.stopButton)
 
+        # REPLAY BUTTON
+        self.replayImage = PhotoImage(file="pics/replayClean.png")
+        self.replayImageResized = self.replayImage.subsample(1, 1)
+        self.replayButton = Button(self.UI, bg='#6A53E1', border=0, image=self.replayImageResized, command=self.replay)
+        self.replayButton_window = self.UI.create_window(self.widthHalf+118, self.buttonHeight, window=self.replayButton)
+
         # Starting the progressbar
         self.progressbar.start()
 
@@ -754,6 +761,9 @@ class Train_Page:
     def stop(self):
         self.progressbar.stop()
         reset_state(2)
+
+    def replay(self):
+        self.start()
 
     def go_back(self):
         reset_state(0)
