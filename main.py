@@ -181,7 +181,7 @@ def rnnWithLSTM():
     model.add(LSTM(64))
     model.add(Dropout(0.3))
     model.add(Dense(2, activation='sigmoid'))  # Rumor/NonRumor
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='Adam', metrics=['accuracy'])
     return model
 
 
@@ -190,6 +190,7 @@ def unpackHistoryAndBuildGraphs(history):
     # Unpack history
     history, accuracy, val_accuracy, loss, val_loss, epochs, numberOfEpochs = unpackHistory(history)
     drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs)
+    exportResultsToExcel("testResults", accuracy, val_accuracy, loss, val_loss, epochs)
 
     accuracy = val_accuracy[-1]  # Last Accuracy
     accuracy = "{:.2f}".format(accuracy)
@@ -226,6 +227,18 @@ def drawHistoryGraphs(accuracy, val_accuracy, loss, val_loss, epochs):
     plt.legend()
     plt.savefig('graphs/graphLoss.png')
 
+def exportResultsToExcel(testResults, accuracy, val_accuracy, loss, val_loss, epochs):
+    import xlsxwriter
+    testResults = testResults + '.xlsx'
+    workbook = xlsxwriter.Workbook(testResults)
+    worksheet = workbook.add_worksheet()
+    worksheet.write_row(0, 0, ['Epochs', 'Accuracy', 'Val_Acc', 'Loss', 'Val_Loss'])
+    worksheet.write_column(1, 0, epochs)
+    worksheet.write_column(1, 1, accuracy)
+    worksheet.write_column(1, 2, val_accuracy)
+    worksheet.write_column(1, 3, loss)
+    worksheet.write_column(1, 4, val_loss)
+    workbook.close()
 
 # MAIN FUNCTION FOR PREDICTING
 def predictTextFromFile(fileAddress):
