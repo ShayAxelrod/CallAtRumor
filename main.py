@@ -560,7 +560,7 @@ class CircularProgressbar(object):
     # Starting the progress bar
     # This is a reverse progressBar since arcs in python only grow counterclockwise.
     # So it is starting at 100% and going backwards to give us a clockwise feel
-    def start(self, interval=150):
+    def start(self, interval=17):
         self.interval = interval
         self.increment = self.full_extent / interval
         self.extent = 360
