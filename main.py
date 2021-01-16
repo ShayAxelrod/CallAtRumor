@@ -11,6 +11,8 @@ from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tkinter import messagebox
+import tkinter.messagebox
 import matplotlib.pyplot as plt
 from datetime import datetime
 import matplotlib
@@ -259,6 +261,11 @@ def readFileAndAddTextToDataSet(fileAddress):
     f = open(fileAddress, "r")
     textToPredict = f.read()
 
+    # Make sure the file contains text
+    if cleanText(textToPredict) == '':
+        tkinter.messagebox.showerror('Error', 'File must contain text!')
+        root.mainloop()
+
     # Generate DataFrame from the text and append it to the data set
     dataFrame = pd.DataFrame([[0, textToPredict, '', '', 0]], columns=['id', 'title', 'author', 'text', 'label'])
     newDataSet = dataSet.append(dataFrame, ignore_index=True)
@@ -424,13 +431,13 @@ class PageRumor():
             .place(x=self.widthHalf - halfOfText - 308, y=self.canvasHeight * 0.31)
 
 
-        training = ttk.Combobox(self.UI, width=23, textvariable=self.train_data, font=('Calibri 18'))
-        training['values'] = (' Default English US',
+        self.training = ttk.Combobox(self.UI, width=23, textvariable=self.train_data, font=('Calibri 18'))
+        self.training['values'] = (' Default English US',
                               ' Import Pre-Trained Data')
-        training.grid(column=1, row=5)
-        training.current(0)
-        training.place(x=self.widthHalf - 356, y=self.canvasHeight * 0.35)
-        training.bind("<ButtonPress-1>", self.getAndSetAddressOfTrainedModel)
+        self.training.grid(column=1, row=5)
+        self.training.current(0)
+        self.training.place(x=self.widthHalf - 356, y=self.canvasHeight * 0.35)
+        self.training.bind("<ButtonPress-1>", self.getAndSetAddressOfTrainedModel)
 
         halfOfText = locateMiddleOfText(18, "TEST SUBJECT")
         Label(self.UI, text='TEST SUBJECT', fg="white", bg='#6A53E1', font=('Montserrat_Medium 18'), pady=5, padx=5) \
@@ -496,8 +503,18 @@ class PageRumor():
         from tkinter.filedialog import askopenfilename
         global modelAddress
         modelAddressRequest = askopenfilename()
-        if modelAddressRequest != '':
+
+        # Check that it's a .h5 file
+        if '.h5' in modelAddressRequest:
+            self.training.current(1)
             modelAddress = modelAddressRequest
+
+        else:
+            self.training.current(0)
+            tkinter.messagebox.showerror('Corrupt Model',
+                                         'The selected model failed to load. Make sure it is a valid \'*.h5\' file.')
+            root.mainloop()
+
         print(modelAddress)
 
     # Open File Dialog and return the address to the selected file
@@ -785,8 +802,15 @@ class Train_Page:
         from tkinter.filedialog import askopenfilename
         global datasetAddress
         datasetAddressRequest = askopenfilename()
-        if datasetAddressRequest != '':
+
+        # Check that it's a .csv file
+        if '.csv' in datasetAddressRequest:
             datasetAddress = datasetAddressRequest
+        else:
+            tkinter.messagebox.showerror('Corrupt Dataset',
+                                         'The selected dataset failed to load. Make sure it is a valid \'*.csv\' file.')
+            root.mainloop()
+
         print(datasetAddress)
 
     #def openFile(self):
